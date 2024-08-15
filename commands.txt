@@ -1,0 +1,2 @@
+
+penocd -f interface/cmsis-dap.cfg  -s `pwd` -c "gdb_flash_program enable" -c "bindto 0.0.0.0" -c "gdb_breakpoint_override hard" -f nxp_s32g274-evk-core7.cfg
