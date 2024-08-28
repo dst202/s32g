@@ -1,2 +1,42 @@
 
 penocd -f interface/cmsis-dap.cfg  -s `pwd` -c "gdb_flash_program enable" -c "bindto 0.0.0.0" -c "gdb_breakpoint_override hard" -f nxp_s32g274-evk-core7.cfg
+
+
+
+proc moo {sjc} {
+    # Step 1: Select-IR-Scan and Shift-IR 0x90
+    # This is the Security JTAG Controller (SJC) register
+    irscan $sjc 0x90 -endstate RUN/IDLE
+
+    # Perform a DR scan to read the value
+    set value [drscan $sjc 32 0 -endstate RUN/IDLE]
+    echo "check1: $value"
+
+    # Step 2: Select-IR-Scan and Shift-IR 0x10
+    # Reserved register
+    irscan $sjc 0x10 -endstate RUN/IDLE
+    runtest 10
+
+    # Step 3: Select-DR-Scan and Shift-DR (reading and writing)
+    set value [drscan $sjc 32 0 -endstate RUN/IDLE]
+    echo "check2: $value"
+    runtest 10
+
+    # Step 4: Send the JTAG password in four 32-bit segments
+    drscan $sjc 32 0x00000000 -endstate DRSHIFT
+    drscan $sjc 32 0x00000000 -endstate DRSHIFT
+    drscan $sjc 32 0x00000000 -endstate DRSHIFT
+    drscan $sjc 32 0x00000000 -endstate DRSHIFT
+    drscan $sjc 32 0xefc0f2eb -endstate DRSHIFT
+    drscan $sjc 32 0x399f616b -endstate DRSHIFT
+    drscan $sjc 32 0xcc50c7e1 -endstate DRSHIFT
+    drscan $sjc 32 0x7ae4e0b3 -endstate RUN/IDLE
+    runtest 10
+
+    # Step 5: Select-IR-Scan and Shift-IR 0x70
+    # Shifting IR with 0x70 and reading the value
+    irscan $sjc 0x70 -endstate IRPAUSE
+    set value [drscan $sjc 32 0 -endstate DRPAUSE]
+    echo "check3: $value"
+    runtest 10
+}
